@@ -1,7 +1,0 @@
-/vendor
-/node_modules
-.env
-.git
-.gitignore
-storage/logs/*
-storage/framework/*
