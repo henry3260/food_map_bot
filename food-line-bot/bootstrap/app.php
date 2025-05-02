@@ -11,9 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // // Disable CSRF protection for specific routes  <-------------------- Add this
+        // Disable CSRF protection for specific routes  <-------------------- Add this
         $middleware->validateCsrfTokens(except: [
-            'api/*',
+            '/line/chat',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

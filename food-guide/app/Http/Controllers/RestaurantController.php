@@ -9,7 +9,7 @@ class RestaurantController extends Controller
     public function search()
     {
         $location = request()->query('location', '25.0478,121.5319');
-        $radius = request()->query('radius', 2000);
+        $radius = request()->query('radius', 500);
         $keyword = request()->query('keyword', '燒烤');
 
         $results = $this->searchRestaurants($location, $radius, $keyword);

@@ -1,0 +1,44 @@
+# 忽略依賴套件
+/vendor/
+/node_modules/
+
+# 忽略環境變數檔案（包含敏感資料）
+.env
+.env.backup
+.env.* # 忽略所有 .env 開頭的檔案（例如 .env.development）
+
+# 忽略 Laravel 快取和日誌檔案
+/storage/*.key
+/storage/logs/*.log
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/storage/logs/laravel.log
+
+# 忽略 Composer 和 PHP 相關檔案
+composer.phar
+composer.lock # 可選，視情況保留
+
+# 忽略 npm 和前端相關檔案
+npm-debug.log
+yarn-error.log
+/package-lock.json # 可選，視情況保留
+
+# 忽略 IDE 和編輯器配置文件
+.idea/
+.vscode/
+*.sublime-*
+.DS_Store
+
+# 忽略測試和暫存檔案
+/public/hot
+/public/storage
+/bootstrap/cache/*
+/coverage/
+.phpunit.result.cache
+
+# 忽略 Homestead 或其他虛擬化配置文件
+Homestead.yaml
+Homestead.json
+/.vagrant/
