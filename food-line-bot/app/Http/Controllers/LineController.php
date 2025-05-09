@@ -1,12 +1,18 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Http\Controllers\RestaurantController;
+use LINE\LINEBot\Event\MessageEvent;
+use LINE\LINEBot\Event\PostbackEvent;
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use LINE\LINEBot;
 use LINE\LINEBot\Constant\HTTPHeader;
 use LINE\LINEBot\HTTPClient\CurlHTTPClient;
+use LINE\LINEBot\MessageBuilder\TextMessageBuilder;
+
 
 class LineController extends Controller
 {
@@ -46,24 +52,37 @@ class LineController extends Controller
                 return response('OK', 200);
             }
 
+
             foreach ($events as $event) {
-                $text = data_get($event, 'message.text');
-                $replyToken = data_get($event, 'replyToken');
-
-                if (empty($replyToken)) {
-                    Log::info('No replyToken in event: ' . json_encode($event));
-                    continue;
+                // 使用者輸入關鍵字「選單」
+                if ($event instanceof MessageEvent && $event->getText() === '選單') {
+                    RestaurantController::sendOptionsMenu($bot, $event->getReplyToken());
+                    continue; // 處理完就進下一個事件
                 }
-
-                try {
-                    $response = $bot->replyText($replyToken, "我是機器人 好好教我你想幹嘛的訊息..." . $text . " 繼續講解吧！");
-                    if ($response->isSucceeded()) {
-                        Log::info('Reply succeeded for text: ' . $text);
-                    } else {
-                        Log::error('Reply failed: ' . $response->getHTTPStatus() . ' ' . $response->getRawBody());
+            
+                // 處理 postback 回傳（例如按鈕被點擊）
+                if ($event instanceof PostbackEvent) {
+                    $data = $event->getPostbackData(); // 取得 postback 資料
+                    Log::info("使用者點選 postback: " . $data); // 記錄使用者點選的 postback 資料
+            
+                    /*你可以根據 $data 的內容做不同動作
+                      例如：action=search&by=area */
+                    parse_str($data, $params);
+                    // 檢查 parse_str 是否成功解析成陣列
+                    if(is_array($params) && isset($params['action'])) {
+                        if ($params['action'] === 'search') {
+                        if ($params['by'] === 'area') {
+                            RestaurantController::showAreaOptions($bot, $event->getReplyToken());
+                        } elseif ($params['by'] === 'type') {
+                            RestaurantController::showTypeOptions($bot, $event->getReplyToken());
+                        } elseif ($params['by'] === 'popular') {
+                            RestaurantController::showPopularRestaurants($bot, $event->getReplyToken());
+                        }
                     }
-                } catch (\Exception $e) {
-                    Log::error('Reply failed: ' . $e->getMessage());
+                    } else {
+                        Log::error('Postback data解析失敗，或缺少必要的參數。');
+                    }
+                    
                 }
             }
 
