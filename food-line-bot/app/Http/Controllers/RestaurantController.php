@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use LINE\Clients\MessagingApi\Model\PushMessageRequest;
 use LINE\Clients\MessagingApi\Api\MessagingApiApi;
 use LINE\Clients\MessagingApi\Model\TextMessage;
 use LINE\Clients\MessagingApi\Model\QuickReply;
@@ -54,16 +55,27 @@ class RestaurantController extends Controller
         $bot->replyMessage($request);
     }
     
-    public static function showTypeOptions(MessagingApiApi $bot, $replyToken)
+    public static function showTypeOptions($replyToken, $token)
     {
-        $message = new TextMessage(['text' => '請輸入您想搜尋的餐廳類型（例如：火鍋、壽司、義大利麵）']);
-        
-        $request = new ReplyMessageRequest([
+        $postData = [
             'replyToken' => $replyToken,
-            'messages' => [$message]
-        ]);
-        
-        $bot->replyMessage($request);
+            'messages' => [
+                [
+                    'type' => 'text',
+                    'text' => '請輸入您想搜尋的餐廳類型（例如：火鍋、壽司、義大利麵）'
+                ]
+            ]
+        ];
+
+            $client = new Client();
+            $client->post('https://api.line.me/v2/bot/message/reply', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $token
+                ],
+                'json' => $postData
+            ]);
+
     }
     
     public static function showPopularRestaurants(MessagingApiApi $bot, $replyToken)
@@ -78,26 +90,45 @@ class RestaurantController extends Controller
         $bot->replyMessage($request);
     }
     
-    public static function shareUserInfo(MessagingApiApi $bot, $replyToken)
+    public static function shareUserInfo($userId, $token)
     {
-        $quickReply = new QuickReply([
-            'items' => [
-                new QuickReplyItem([
-                    'action' => new LocationAction(['label' => '傳送位置']),
-                ]),
-            ],
-        ]);
-        
-        $message = new TextMessage([
-            'text' => '請直接傳送你的位置資訊，我們會根據你的位置推薦附近的餐廳！ 🍽️',
-            'quickReply' => $quickReply,
-        ]);
-        
-        $request = new ReplyMessageRequest([
-            'replyToken' => $replyToken,
-            'messages' => [$message]
-        ]);
-        
-        $bot->replyMessage($request);
+        $locationPostData = [
+            'to' => $userId,
+            'messages' => [
+                [
+                    'type' => 'text',
+                    'text' => '請直接傳送你的位置資訊，我們會根據你的位置推薦附近的餐廳！ 🍽️',
+                    'quickReply' => [
+                        'items' => [
+                            [
+                                'type' => 'action',
+                                'action' => [
+                                    'type' => 'location',
+                                    'label' => '分享位置'
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        try {
+            // 稍微延遲發送，避免衝突
+            sleep(1);
+
+            $client = new Client();
+            $client->post('https://api.line.me/v2/bot/message/push', [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $token
+                ],
+                'json' => $locationPostData
+            ]);
+
+            Log::info('Location request sent successfully');
+        } catch (\Exception $e) {
+            Log::error('Error sending location request: ' . $e->getMessage());
+        }
     }
 }

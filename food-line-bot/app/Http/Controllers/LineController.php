@@ -156,51 +156,15 @@ class LineController extends Controller
                                     'json' => $postData
                                 ]);                               
                             } elseif ($params['by'] === 'type') {
-                                // Handle type option directly
-                                $postData = [
-                                    'replyToken' => $replyToken,
-                                    'messages' => [
-                                        [
-                                            'type' => 'text',
-                                            'text' => '請輸入您想搜尋的餐廳類型（例如：火鍋、壽司、義大利麵）'
-                                        ]
-                                    ]
-                                ];
+                                $RestaurantController = new RestaurantController();
+
+                                // 發送餐廳類型訊息
+                                $RestaurantController->showTypeOptions($replyToken, $token);
                                 
-                                $client = new Client();
-                                $client->post('https://api.line.me/v2/bot/message/reply', [
-                                    'headers' => [
-                                        'Content-Type' => 'application/json',
-                                        'Authorization' => 'Bearer ' . $token
-                                    ],
-                                    'json' => $postData
-                                ]);
-                                
-                                // Also send the location request
-                                $locationData = [
-                                    'replyToken' => $replyToken,
-                                    'messages' => [
-                                        [
-                                            'type' => 'text',
-                                            'text' => '請直接傳送你的位置資訊，我們會根據你的位置推薦附近的餐廳！ 🍽️',
-                                            'quickReply' => [
-                                                'items' => [
-                                                    [
-                                                        'type' => 'action',
-                                                        'action' => [
-                                                            'type' => 'location',
-                                                            'label' => '傳送位置'
-                                                        ]
-                                                    ]
-                                                ]
-                                            ]
-                                        ]
-                                    ]
-                                ];
-                                
-                                // Note: We can't send two replies to the same replyToken
-                                // This second message would need to be handled differently in production
-                                
+                                //發送位置請求
+                                $userId = $event['source']['userId'];
+                                $RestaurantController->shareUserInfo($userId, $token);
+
                             } elseif ($params['by'] === 'popular') {
                                 // Handle popular option directly
                                 $postData = [
