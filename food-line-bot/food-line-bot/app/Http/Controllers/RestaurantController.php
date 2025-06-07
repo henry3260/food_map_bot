@@ -43,48 +43,17 @@ class RestaurantController extends Controller
         $bot->replyMessage($request);
     }
     
-    public static function showAreaOptions($replyToken, $token)
+    public static function showAreaOptions(MessagingApiApi $bot, $replyToken)
     {
-        $postData = [
+        $message = new TextMessage(['text' => '請輸入您想搜尋的地區（例如：台北市、中山區）']);
+        
+        $request = new ReplyMessageRequest([
             'replyToken' => $replyToken,
-            'messages' => [
-                [
-                    'type' => 'text',
-                    'text' => '請輸入縣市和行政區（例如：台北市 中山區）',
-                    'quickReply' => [
-                        'items' => [
-                            [
-                                'type' => 'action',
-                                'action' => [
-                                    'type' => 'message',
-                                    'label' => '範例：台北市 中山區',
-                                    'text' => '台北市 中山區'
-                                ]
-                            ],
-                            [
-                                'type' => 'action',
-                                'action' => [
-                                    'type' => 'message',
-                                    'label' => '範例：新北市 三重區',
-                                    'text' => '新北市 三重區'
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-
-        $client = new Client();
-        $client->post('https://api.line.me/v2/bot/message/reply', [
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $token
-            ],
-            'json' => $postData
+            'messages' => [$message]
         ]);
-    } 
+        
+        $bot->replyMessage($request);
+    }
     
     public static function showTypeOptions($replyToken, $token)
     {
@@ -106,6 +75,7 @@ class RestaurantController extends Controller
                 ],
                 'json' => $postData
             ]);
+
     }
     
     public static function showPopularRestaurants(MessagingApiApi $bot, $replyToken)

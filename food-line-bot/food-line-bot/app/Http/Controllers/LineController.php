@@ -12,14 +12,6 @@ use GuzzleHttp\Client;
 
 class LineController extends Controller
 {
-
-    private $areaData;
-
-    public function __construct()
-    {
-        $this->areaData = config('areaData');
-    }
-
     public function index(Request $request)
     {
         $secret = env('LINE_BOT_CHANNEL_SECRET', 'your_channel_secret');
@@ -110,17 +102,7 @@ class LineController extends Controller
                         ]);
                         
                         Log::info('Menu response: ' . $response->getBody());
-                    } 
-                    elseif(preg_match('/^\S+\s+\S+$/', $userMessage)){
-                        $response = $this->checkArea($userMessage);
-                        $message = [
-                            'type' => 'text',
-                            'text' => $response['message']
-                        ];
-                        Log::info('要回傳給使用者的訊息:', $message);
-                    }
-                    
-                    else {
+                    } else {
                         Log::info('接收到非關鍵字訊息');
                         
                         // Send default message
@@ -148,26 +130,31 @@ class LineController extends Controller
                 // 處理 postback 回傳
                 if ($event['type'] === 'postback' && isset($event['postback']['data'])) {
                     $data = $event['postback']['data'];
-                    
                     Log::info("使用者點選 postback: " . $data);
 
                     parse_str($data, $params);
                     if (is_array($params) && isset($params['action'])) {
                         if ($params['action'] === 'search') {
                             if ($params['by'] === 'area') {
-                                $RestaurantController = new RestaurantController();
-
-                                // 發送地區選項訊息
-                                $RestaurantController->showAreaOptions($replyToken, $token);
-
-                                // 解析訊息回傳 LINE
-                                $message = [
-                                    'type' => 'text',
-                                    'text' => $response['message']
+                                // Handle area option directly
+                                $postData = [
+                                    'replyToken' => $replyToken,
+                                    'messages' => [
+                                        [
+                                            'type' => 'text',
+                                            'text' => '請輸入您想搜尋的地區（例如：台北市、中山區）'
+                                        ]
+                                    ]
                                 ];
-
-                                $this->replyToUser($replyToken, [$message]);
-                                                       
+                                
+                                $client = new Client();
+                                $client->post('https://api.line.me/v2/bot/message/reply', [
+                                    'headers' => [
+                                        'Content-Type' => 'application/json',
+                                        'Authorization' => 'Bearer ' . $token
+                                    ],
+                                    'json' => $postData
+                                ]);                               
                             } elseif ($params['by'] === 'type') {
                                 $RestaurantController = new RestaurantController();
 
@@ -212,27 +199,4 @@ class LineController extends Controller
             return response('Internal Server Error: ' . $e->getMessage(), 500);
         }
     }
-
-
-    public function checkArea($userInput)
-    {
-        // 猜解使用者輸入
-        [$city, $district] = explode(' ', $userInput);
-
-
-        // 檢查城市與地區是否存在
-        if (isset($this->areaData[$city]) && in_array($district, $this->areaData[$city])) {
-            return [
-                'status' => 'success',
-                'message' => "輸入成功: $city $district 存在於資料中"
-            ];
-        } else {
-            return [
-                'status' => 'error',
-                'message' => "輸入錯誤: $city $district 不存在於資料中"
-            ];
-        }
-    }
-    
-    
 }
