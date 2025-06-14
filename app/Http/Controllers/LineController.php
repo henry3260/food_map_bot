@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\RestaurantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 use LINE\Clients\MessagingApi\Api\MessagingApiApi;
 use LINE\Clients\MessagingApi\Configuration;
@@ -117,6 +118,22 @@ class LineController extends Controller
                             'type' => 'text',
                             'text' => $response['message']
                         ];
+                        
+                        $postData = [
+                            'replyToken' => $replyToken,
+                            'messages' => [$message]
+                        ];
+
+                        // Send request directly using Guzzle
+                        $client = new Client();
+                        $response = $client->post('https://api.line.me/v2/bot/message/reply', [
+                            'headers' => [
+                                'Content-Type' => 'application/json',
+                                'Authorization' => 'Bearer ' . $token
+                            ],
+                            'json' => $postData
+                        ]);
+
                         Log::info('要回傳給使用者的訊息:', $message);
                     }
                     
@@ -155,18 +172,20 @@ class LineController extends Controller
                     if (is_array($params) && isset($params['action'])) {
                         if ($params['action'] === 'search') {
                             if ($params['by'] === 'area') {
+                                $userId = $event['source']['userId'];
+                                $userData =[
+                                    'search_type' => 'area',
+                                    'step' => 'select_area',
+                                    'timestamp' => now()->toDateTimeString(),
+                                ];
+
+                                $this->storeUserData($userId, $userData);
+
                                 $RestaurantController = new RestaurantController();
 
                                 // 發送地區選項訊息
                                 $RestaurantController->showAreaOptions($replyToken, $token);
 
-                                // 解析訊息回傳 LINE
-                                $message = [
-                                    'type' => 'text',
-                                    'text' => $response['message']
-                                ];
-
-                                $this->replyToUser($replyToken, [$message]);
                                                        
                             } elseif ($params['by'] === 'type') {
                                 $RestaurantController = new RestaurantController();
@@ -234,5 +253,22 @@ class LineController extends Controller
         }
     }
     
-    
+    public function storeUserData($userId, $userData)
+    {
+        $key = "line_user_{$userId}";
+        Cache::put($key, $userData, now()->addMinutes(30)); // 存 30 分鐘
+        
+        Log::info("存儲使用者資料", [
+            'user_id' => $userId,
+            'key' => $key,
+            'data' => $userData
+        ]);
+    }
+
+    public function getUserData($userId)
+    {
+        $key = "line_user_{$userId}";
+        return Cache::get($key);
+    }
+
 }
