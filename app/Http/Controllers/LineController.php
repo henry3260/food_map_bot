@@ -117,6 +117,98 @@ class LineController extends Controller
                         
                         Log::info('選單回應: ' . $response->getBody());
                     }
+                    // 新增處理 custom_type 輸入的邏輯，並確保它在其他通用文字處理之前
+                    elseif ($userStep === 'waiting_custom_type_input') { //
+                        Log::info('使用者輸入自訂餐廳類型: ' . $userMessage);
+                        
+                        // 儲存使用者輸入的餐廳類型
+                        $userData['restaurant_type'] = [
+                            'type' => 'custom',
+                            'keyword' => $userMessage
+                        ];
+                        $userData['step'] = 'type_set';
+                        $this->storeUserData($userId, $userData);
+                        
+                        // 呼叫新的輔助函式來建立整合後的確認訊息
+                        $confirmationMessage = $this->buildConfirmationMessage($userData);
+
+                        // 發送確認訊息並請求位置
+                        $postData = [
+                            'replyToken' => $replyToken,
+                            'messages' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $confirmationMessage,
+                                    'quickReply' => [
+                                        'items' => [
+                                            [
+                                                'type' => 'action',
+                                                'action' => [
+                                                    'type' => 'location',
+                                                    'label' => '分享位置'
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ];
+                        
+                        $client = new Client();
+                        $client->post('https://api.line.me/v2/bot/message/reply', [
+                            'headers' => [
+                                'Content-Type' => 'application/json',
+                                'Authorization' => 'Bearer ' . $token
+                            ],
+                            'json' => $postData
+                        ]);
+                    }
+                    // 新增處理 custom_type 輸入的邏輯，並確保它在其他通用文字處理之前
+                    elseif ($userStep === 'waiting_custom_type_input') { //
+                        Log::info('使用者輸入自訂餐廳類型: ' . $userMessage);
+                        
+                        // 儲存使用者輸入的餐廳類型
+                        $userData['restaurant_type'] = [
+                            'type' => 'custom',
+                            'keyword' => $userMessage
+                        ];
+                        $userData['step'] = 'type_set';
+                        $this->storeUserData($userId, $userData);
+                        
+                        // 呼叫新的輔助函式來建立整合後的確認訊息
+                        $confirmationMessage = $this->buildConfirmationMessage($userData);
+
+                        // 發送確認訊息並請求位置
+                        $postData = [
+                            'replyToken' => $replyToken,
+                            'messages' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => $confirmationMessage,
+                                    'quickReply' => [
+                                        'items' => [
+                                            [
+                                                'type' => 'action',
+                                                'action' => [
+                                                    'type' => 'location',
+                                                    'label' => '分享位置'
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ];
+                        
+                        $client = new Client();
+                        $client->post('https://api.line.me/v2/bot/message/reply', [
+                            'headers' => [
+                                'Content-Type' => 'application/json',
+                                'Authorization' => 'Bearer ' . $token
+                            ],
+                            'json' => $postData
+                        ]);
+                    }
                     // 處理價格範圍輸入
                     elseif ($userStep === 'waiting_price_range') {
                         Log::info('使用者輸入價格範圍: ' . $userMessage);
@@ -157,6 +249,75 @@ class LineController extends Controller
                                     [
                                         'type' => 'text',
                                         'text' => '價格格式不正確！\n\n請使用以下格式輸入：\n• 100-500 (範圍)\n• 100~ (100元以上)\n• ~500 (500元以下)\n• 300 (大約300元)\n\n請重新輸入價格範圍：'
+                                    ]
+                                ]
+                            ];
+                        }
+                        
+                        $client = new Client();
+                        $client->post('https://api.line.me/v2/bot/message/reply', [
+                            'headers' => [
+                                'Content-Type' => 'application/json',
+                                'Authorization' => 'Bearer ' . $token
+                            ],
+                            'json' => $postData
+                        ]);
+                    }
+                    // 新增處理距離輸入的邏輯
+                    elseif ($userStep === 'waiting_distance_input') {
+                        Log::info('使用者輸入距離: ' . $userMessage);
+
+                        // 驗證輸入是否為有效數字
+                        if (is_numeric($userMessage) && $userMessage > 0) {
+                            $distance = (int)$userMessage;
+                            // 限制距離在合理範圍內，例如 100 到 50000 公尺 (50 公里)
+                            if ($distance >= 100 && $distance <= 50000) {
+                                $userData['search_radius'] = $distance; // 儲存距離
+                                $userData['step'] = 'distance_set'; // 設定新狀態
+                                $this->storeUserData($userId, $userData);
+
+                                // 呼叫輔助函式來建立整合後的確認訊息
+                                $confirmationMessage = $this->buildConfirmationMessage($userData);
+
+                                // 發送確認訊息並請求位置
+                                $postData = [
+                                    'replyToken' => $replyToken,
+                                    'messages' => [
+                                        [
+                                            'type' => 'text',
+                                            'text' => $confirmationMessage,
+                                            'quickReply' => [
+                                                'items' => [
+                                                    [
+                                                        'type' => 'action',
+                                                        'action' => [
+                                                            'type' => 'location',
+                                                            'label' => '分享位置'
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ];
+                            } else {
+                                $postData = [
+                                    'replyToken' => $replyToken,
+                                    'messages' => [
+                                        [
+                                            'type' => 'text',
+                                            'text' => '距離輸入無效。請輸入一個介於 100 到 50000 公尺之間的數字。'
+                                        ]
+                                    ]
+                                ];
+                            }
+                        } else {
+                            $postData = [
+                                'replyToken' => $replyToken,
+                                'messages' => [
+                                    [
+                                        'type' => 'text',
+                                        'text' => '距離輸入無效。請輸入一個正整數（單位：公尺）。'
                                     ]
                                 ]
                             ];
@@ -247,9 +408,10 @@ class LineController extends Controller
                     $userData = $this->getUserData($userId);
                     $priceRange = $userData['price_range'] ?? null;
                     $restaurantType = $userData['restaurant_type'] ?? null;
+                    $searchRadius = $userData['search_radius'] ?? null; // 取出儲存的距離
                     
                     // 呼叫 Google Maps API 查詢附近餐廳
-                    $restaurants = $this->getNearbyRestaurants($lat, $lng, $priceRange, $restaurantType);
+                    $restaurants = $this->getNearbyRestaurants($lat, $lng, $priceRange, $restaurantType, $searchRadius);
                     
                     if (empty($restaurants)) {
                         $postData = [
@@ -559,84 +721,21 @@ class LineController extends Controller
                                 ]);
                             }
 
-                             elseif ($params['action'] === 'custom_type') {
-                                // 使用者選擇自訂餐廳類型
+                             elseif ($params['by'] === 'distance') {
+                                Log::info('使用者選擇依距離搜尋');
+
+                                // 設定使用者狀態為等待距離輸入
                                 $userData = $this->getUserData($userId) ?? [];
-                                $userData['step'] = 'waiting_custom_type_input';
+                                $userData['step'] = 'waiting_distance_input'; // 新增的狀態
+                                $userData['search_type'] = 'distance';
                                 $this->storeUserData($userId, $userData);
-                                
-                                $postData = [
-                                    'replyToken' => $replyToken,
-                                    'messages' => [
-                                        [
-                                            'type' => 'text',
-                                            'text' => "請輸入您想搜尋的餐廳類型或關鍵字\n\n例如：\n• 火鍋\n• 燒烤\n• 咖啡廳\n• 牛排\n• 素食\n• 小籠包"
-                                        ]
-                                    ]
-                                ];
-                                
-                                $client = new Client();
-                                $client->post('https://api.line.me/v2/bot/message/reply', [
-                                    'headers' => [
-                                        'Content-Type' => 'application/json',
-                                        'Authorization' => 'Bearer ' . $token
-                                    ],
-                                    'json' => $postData
-                                ]);
-                            }
 
-                            // 在處理文字訊息的部分，新增處理自訂類型輸入
-                            elseif ($userStep === 'waiting_custom_type_input') {
-                                Log::info('使用者輸入自訂餐廳類型: ' . $userMessage);
-                                
-                                // 儲存使用者輸入的餐廳類型
-                                $userData['restaurant_type'] = [
-                                    'type' => 'custom',
-                                    'keyword' => $userMessage
-                                ];
-                                $userData['step'] = 'type_set';
-                                $this->storeUserData($userId, $userData);
-                                
-                                // 發送確認訊息並請求位置
                                 $postData = [
                                     'replyToken' => $replyToken,
                                     'messages' => [
                                         [
                                             'type' => 'text',
-                                            'text' => "餐廳類型設定完成：{$userMessage}\n\n請分享您的位置，讓我為您推薦附近的{$userMessage}餐廳。",
-                                            'quickReply' => [
-                                                'items' => [
-                                                    [
-                                                        'type' => 'action',
-                                                        'action' => [
-                                                            'type' => 'location',
-                                                            'label' => '分享位置'
-                                                        ]
-                                                    ]
-                                                ]
-                                            ]
-                                        ]
-                                    ]
-                                ];
-                                
-                                $client = new Client();
-                                $client->post('https://api.line.me/v2/bot/message/reply', [
-                                    'headers' => [
-                                        'Content-Type' => 'application/json',
-                                        'Authorization' => 'Bearer ' . $token
-                                    ],
-                                    'json' => $postData
-                                ]);
-
-                                
-                            } elseif ($params['by'] === 'distance') {
-                                // 直接處理熱門選項
-                                $postData = [
-                                    'replyToken' => $replyToken,
-                                    'messages' => [
-                                        [
-                                            'type' => 'text',
-                                            'text' => "以下是熱門推薦餐廳：\n1. 餐廳A\n2. 餐廳B\n3. 餐廳C"
+                                            'text' => "請輸入您希望搜尋的餐廳距離（單位：公尺），例如：\n• 500 (500公尺內)\n• 1000 (1公里內)\n• 3000 (3公里內)"
                                         ]
                                     ]
                                 ];
@@ -674,7 +773,7 @@ class LineController extends Controller
                                     [
                                         'type' => 'text',
                                         'text' => $confirmationMessage,
-                                        'quickReply' => [
+                                         'quickReply' => [
                                             'items' => [
                                                 [
                                                     'type' => 'action',
@@ -771,6 +870,33 @@ class LineController extends Controller
                                 'json' => $postData
                             ]);
                         }
+                        elseif ($params['action'] === 'custom_type') {
+                                // 使用者選擇自訂餐廳類型
+                                $userData = $this->getUserData($userId) ?? [];
+                                $userData['step'] = 'waiting_custom_type_input';
+                                $this->storeUserData($userId, $userData);
+                                
+                                $postData = [
+                                    'replyToken' => $replyToken,
+                                    'messages' => [
+                                        [
+                                            'type' => 'text',
+                                            'text' => "請輸入您想搜尋的餐廳類型或關鍵字\n\n例如：\n• 火鍋\n• 燒肉\n• 咖啡廳\n• 牛排\n• 素食\n• 小籠包"
+                                        ]
+                                    ]
+                                ];
+                                
+                                $client = new Client();
+                                $client->post('https://api.line.me/v2/bot/message/reply', [
+                                    'headers' => [
+                                        'Content-Type' => 'application/json',
+                                        'Authorization' => 'Bearer ' . $token
+                                    ],
+                                    'json' => $postData
+                                ]);
+                            }
+
+                            
                     } else {
                         Log::error('Postback 資料解析失敗，或缺少必要的參數。');
                     }
@@ -883,10 +1009,10 @@ class LineController extends Controller
         return Cache::get($key);
     }
 
-    public function getNearbyRestaurants($lat, $lng, $priceRange = null, $restaurantType = null)
+    public function getNearbyRestaurants($lat, $lng, $priceRange = null, $restaurantType = null, $searchRadius = null)
 {
     $apiKey = env('GOOGLE_MAPS_API_KEY');
-    $radius = 3000; // 稍微擴大搜尋範圍，以獲取更多原始資料來篩選
+    $radius = $searchRadius ?? 3000; // 預設搜尋半徑 3000 公尺
 
     $url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
     $params = [
@@ -999,6 +1125,11 @@ private function buildConfirmationMessage($userData)
     // 檢查是否有類型條件
     if (isset($userData['restaurant_type']['keyword'])) {
         $conditions[] = "類型：" . $userData['restaurant_type']['keyword'];
+    }
+
+    // 檢查是否有距離條件
+    if (isset($userData['search_radius'])) {
+        $conditions[] = "距離：{$userData['search_radius']} 公尺內";
     }
 
     // 如果沒有任何條件，回傳預設訊息
