@@ -163,52 +163,7 @@ class LineController extends Controller
                             'json' => $postData
                         ]);
                     }
-                    // 新增處理 custom_type 輸入的邏輯，並確保它在其他通用文字處理之前
-                    elseif ($userStep === 'waiting_custom_type_input') { //
-                        Log::info('使用者輸入自訂餐廳類型: ' . $userMessage);
-                        
-                        // 儲存使用者輸入的餐廳類型
-                        $userData['restaurant_type'] = [
-                            'type' => 'custom',
-                            'keyword' => $userMessage
-                        ];
-                        $userData['step'] = 'type_set';
-                        $this->storeUserData($userId, $userData);
-                        
-                        // 呼叫新的輔助函式來建立整合後的確認訊息
-                        $confirmationMessage = $this->buildConfirmationMessage($userData);
 
-                        // 發送確認訊息並請求位置
-                        $postData = [
-                            'replyToken' => $replyToken,
-                            'messages' => [
-                                [
-                                    'type' => 'text',
-                                    'text' => $confirmationMessage,
-                                    'quickReply' => [
-                                        'items' => [
-                                            [
-                                                'type' => 'action',
-                                                'action' => [
-                                                    'type' => 'location',
-                                                    'label' => '分享位置'
-                                                ]
-                                            ]
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        ];
-                        
-                        $client = new Client();
-                        $client->post('https://api.line.me/v2/bot/message/reply', [
-                            'headers' => [
-                                'Content-Type' => 'application/json',
-                                'Authorization' => 'Bearer ' . $token
-                            ],
-                            'json' => $postData
-                        ]);
-                    }
                     // 處理價格範圍輸入
                     elseif ($userStep === 'waiting_price_range') {
                         Log::info('使用者輸入價格範圍: ' . $userMessage);
